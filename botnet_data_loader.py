@@ -11,13 +11,14 @@ import glob
 import pandas as pd
 from datetime import datetime
 
-class botnet_data_loader:
+MY_WORKING_DIRECTORY = os.getcwd()
+
+class Botnet_Data_Loader:
     
     # TODO: If you need up-sampling or down-sampling, develop the parameter class_rate
     def botnet_data(sample_size, class_rate=0):
         now = datetime.now()
         print('Currently, data is being read. It may take some time.')
-        MY_WORKING_DIRECTORY = os.getcwd()
         all_csv_files = glob.glob(os.path.join(MY_WORKING_DIRECTORY, 'CTU-13-Dataset/*.csv'))
         df = pd.concat((pd.read_csv(f) for f in all_csv_files))
         

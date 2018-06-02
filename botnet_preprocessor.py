@@ -19,7 +19,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import confusion_matrix
 
-from botnet_data_loader import botnet_data_loader as loader
+from botnet_data_loader import Botnet_Data_Loader as loader
 
 # Set your working directory
 MY_WORKING_DIRECTORY = os.getcwd()
@@ -29,9 +29,9 @@ DATETIME_FORMAT = '%Y/%m/%d %H:%M:%S.%f'
 
 class Botnet_Processor:
     
-    def __init__(self, sample_size=1000000):
+    def __init__(self, data):
         # Read csv file using loader
-        self.raw_data = loader.botnet_data(sample_size=sample_size)
+        self.raw_data = data
         self.preprocessed_data = pd.DataFrame()
         self.X_train = np.empty((0,0))
         self.X_test = np.empty((0,0))
@@ -315,7 +315,9 @@ class Botnet_Processor:
         plt.show()
         
 if __name__ == "__main__":
-    botnet_processor = Botnet_Processor()
+    data = loader.botnet_data(sample_size=100000)
+    
+    botnet_processor = Botnet_Processor(data = data)
     botnet_processor.print_head(10)
     
     X_train, X_test, y_train, y_test = botnet_processor.preprocess()

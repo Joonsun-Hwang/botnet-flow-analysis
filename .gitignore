@@ -2,4 +2,4 @@
 .DS_Store
 .DS_Store?
 __pycache__
-/CTU-13-Dataset/*.csv
+CTU-13-Dataset/*.csv

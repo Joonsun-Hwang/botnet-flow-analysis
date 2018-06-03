@@ -19,8 +19,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import confusion_matrix
 
-from botnet_data_loader import Botnet_Data_Loader as loader
-
 # Set your working directory
 MY_WORKING_DIRECTORY = os.getcwd()
 
@@ -38,15 +36,18 @@ class Botnet_Processor:
         self.y_train = np.empty((0,0))
         self.y_test = np.empty((0,0))
     
-    def print_head(self, n=5):
-        print(self.raw_data.head(n))
+    def get_head(self, n=5):
+        return self.raw_data.head(n)
     
-    def split_data_by_class(self):
-        botnet = self.raw_data[self.raw_data['Label'].str.contains('Botnet')]
-        background = self.raw_data[self.raw_data['Label'].str.contains('Background')]
-        normal = self.raw_data[self.raw_data['Label'].str.contains('Normal')]
+    @staticmethod
+    def split_data_by_class(data):
+        botnet = data[data['Label'].str.contains('Botnet')]
+        background = data[data['Label'].str.contains('Background')]
+        normal = data[data['Label'].str.contains('Normal')]
         
-        return background, normal, botnet
+        dist = {'Background': background.shape[0], 'Botnet': botnet.shape[0], 'Normal': normal.shape[0]}
+        
+        return dist
     
     def get_distribution_columns(self):
         distribution_list = []
@@ -170,7 +171,7 @@ class Botnet_Processor:
         
         return treated_ctu
     
-    def preprocess(self):
+    def preprocess(self, test_size=0.3):
         now = datetime.now()
         
         print('Currently, data is being preprocessed. It may take some time.')
@@ -202,7 +203,7 @@ class Botnet_Processor:
         
         # Split the data into train & test data
         X, y = ctu_for_ml_nd[:, :ctu_for_ml_nd.shape[1]-1], ctu_for_ml_nd[:, ctu_for_ml_nd.shape[1]-1]
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=0)
         y_train = y_train.astype('int')
         y_test = y_test.astype('int')
                 
@@ -315,7 +316,9 @@ class Botnet_Processor:
         plt.show()
         
 if __name__ == "__main__":
-    data = loader.botnet_data(sample_size=100000)
+    from botnet_data_loader import Botnet_Data_Loader as loader
+
+    data = loader().botnet_data(sample_size=100000)
     
     botnet_processor = Botnet_Processor(data = data)
     botnet_processor.print_head(10)

@@ -85,7 +85,10 @@ class Botnet_Processor:
             
             # Assign binary label
             if 'From-Botnet' in a_row[14]:
-                binary_label.append(1)
+                if 'CC' in a_row[14] or 'DNS' in a_row[14]:
+                    binary_label.append(0)
+                else:
+                    binary_label.append(1)
             else:
                 binary_label.append(0)
             
@@ -302,7 +305,6 @@ class Botnet_Processor:
     
         return forest, y_pred
 
-
     def __draw_confusion_matrix__(self, y_test, y_pred):
         confmat = confusion_matrix(y_true=y_test, y_pred=y_pred)
         
@@ -314,15 +316,22 @@ class Botnet_Processor:
         plt.xlabel('predicted label')
         plt.ylabel('true label')
         plt.show()
-        
+
+
 if __name__ == "__main__":
     from botnet_data_loader import Botnet_Data_Loader as loader
 
-    data = loader().botnet_data(sample_size=100000)
+    data = loader().botnet_data(sample_size=500000)
     
     botnet_processor = Botnet_Processor(data = data)
-    botnet_processor.print_head(10)
+    botnet_processor.get_head(10)
     
     X_train, X_test, y_train, y_test = botnet_processor.preprocess()
     
+    # test metrics: [accuracy, precision, recall]
+    
+    # [0.9958733333333334, 0.8219557195571956, 0.8843672456575682]
     lr, y_pred = botnet_processor.logistic_regression()
+    
+    # 
+    lr, y_pred = botnet_processor.random_forest()

@@ -10,43 +10,71 @@ import functools
 
 import tensorflow as tf
 from keras.models import Sequential
-from keras.layers import Dense, Dropout
+from keras.layers import Dense, Dropout, Activation
+from keras.layers.normalization import BatchNormalization
 from keras import backend as K
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
+from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 
 
 class Neural_Network:
 
-    def __init__(self, input_dim, output_dim=1, epochs=10000, batch_size=1024, hidden_layer=10):
+    def __init__(self, input_dim, output_dim=1, epochs=10000, batch_size=1024, hidden_layer=10, first_hidden_node=258):
         self.input_dim = input_dim
         self.output_dim = output_dim
         
         self.epochs = epochs
         self.batch_size = batch_size
         self.hidden_layer = hidden_layer-1
-        self.first_hidden_node = 258
+        self.first_hidden_node = first_hidden_node
         
         self.model = Sequential()
         
     def build_model(self):
-        self.model.add(Dense(int(self.first_hidden_node), activation='relu', input_dim=self.input_dim))
+        """
+        # Input Layer
+        self.model.add(Dense(int(self.first_hidden_node), input_dim=self.input_dim))
+        self.model.add(Activation('relu'))
         self.model.add(Dropout(0.5))
         
+        # Hidden Layer
         for i in range(self.hidden_layer):
-            self.model.add(Dense(int(self.first_hidden_node/(i+2)), activation='relu'))
+            self.model.add(Dense(int(self.first_hidden_node/(i+2))))
+            self.model.add(Activation('relu'))
             self.model.add(Dropout(0.5))
         
-        self.model.add(Dense(self.output_dim, activation='sigmoid'))
+        # Output Layer
+        self.model.add(Dense(self.output_dim))
+        self.model.add(Activation('sigmoid'))
+        """
         
-        precision = self.__as_keras_metric__(tf.metrics.precision)
-        recall = self.__as_keras_metric__(tf.metrics.recall)
+        
+        # Input Layer
+        self.model.add(Dense(int(self.first_hidden_node), input_dim=self.input_dim))
+        self.model.add(BatchNormalization())
+        self.model.add(Activation('relu'))
+        self.model.add(Dropout(0.5))
+        
+        # Hidden Layer
+        for i in range(self.hidden_layer):
+            self.model.add(Dense(int(self.first_hidden_node/(i+2))))
+            self.model.add(BatchNormalization())
+            self.model.add(Activation('relu'))
+            self.model.add(Dropout(0.5))
+        
+        # Output Layer
+        self.model.add(Dense(self.output_dim))
+        self.model.add(BatchNormalization())
+        self.model.add(Activation('sigmoid'))
+        
+        
         adam = Adam(lr=0.00003)
         
         self.model.compile(optimizer=adam,
                            loss='binary_crossentropy',
-                           metrics=['accuracy', precision, recall])
+                           metrics=['accuracy'])
         
     def fit(self, X_train, y_train, X_val, y_val):
         early_stopping = EarlyStopping(patience=10)
@@ -79,8 +107,12 @@ class Neural_Network:
     def evaluate(self, X_test, y_test):
         return self.model.evaluate(X_test, y_test, batch_size=64)
     
-    def predict(self, X_test):
-        return self.model.predict_classes(X_test)
+    def predict(self, X_test, y_test):
+        y_pred = self.model.predict_classes(X_test)
+        
+        self.__draw_confusion_matrix__(self.y_test, y_pred)
+        
+        return y_pred
     
     @staticmethod
     def __as_keras_metric__(method):
@@ -93,6 +125,18 @@ class Neural_Network:
                 value = tf.identity(value)
             return value
         return wrapper
+
+    def __draw_confusion_matrix__(self, y_test, y_pred):
+        confmat = confusion_matrix(y_true=y_test, y_pred=y_pred)
+        
+        fig, ax = plt.subplots(figsize=(3, 3))
+        ax.matshow(confmat, cmap=plt.cm.Blues, alpha=0.3)
+        for i in range(confmat.shape[0]):
+            for j in range(confmat.shape[1]):
+                ax.text(x=j, y=i, s=confmat[i, j], va='center', ha='center')
+        plt.xlabel('predicted label')
+        plt.ylabel('true label')
+        plt.show()
     
     
 if __name__ == "__main__":
@@ -111,10 +155,29 @@ if __name__ == "__main__":
     y_val = y_train[400000:]
     y_train = y_train[:400000]
     
-    nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=20)
+    nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=50)
     nn.build_model()
     nn.fit(X_train, y_train, X_val, y_val)
     
-    # [0.3933708175261815, 0.8343625, 0.5838891558011373, 0.9991232609113058]
-    nn.evaluate(X_test, y_test)
+    print(nn.evaluate(X_test, y_test))
+    y_pred = nn.predict(X_test, y_test)
     
+    # [loss, accuracy, precision, recall]
+    
+    # 20 hidden layers
+    # [0.16625044167637826, 0.9583875, 0.8767687260105649, 0.9962718793182865]
+
+    # 20 hidden layers + batch normalization
+    # [0.6413604638814926, 0.6710791666666667, 0, 0]
+    
+    # 50 hidden layers
+    # 
+    
+    # 50 hidden layers + batch normalization
+    # 
+    
+    # 100 hidden layers
+    # 
+
+    # 100 hidden layers + batch normalization
+    # 

@@ -47,7 +47,7 @@ class Botnet_Data_Loader:
         return df
     
     def __random_sampling__(self, df, sample_size):
-        return df.sample(n=sample_size, replace=False)
+        return df.sample(n=sample_size, replace=False, random_state=0)
         
     def __sample_rate_conversion__(self, df, class_rate):
         botnet = df[df['Label'].str.contains('Botnet')]

@@ -21,10 +21,11 @@ import matplotlib.pyplot as plt
 
 class Neural_Network:
 
-    def __init__(self, input_dim, output_dim=1, epochs=10000, batch_size=1024, hidden_layer=10, first_hidden_node=258):
+    def __init__(self, input_dim, output_dim=1, learning_rate=0.00003, epochs=10000, batch_size=256, hidden_layer=10, first_hidden_node=258, batch_normalization=False):
         self.input_dim = input_dim
         self.output_dim = output_dim
         
+        self.learning_rate = learning_rate
         self.epochs = epochs
         self.batch_size = batch_size
         self.hidden_layer = hidden_layer-1
@@ -32,45 +33,44 @@ class Neural_Network:
         
         self.model = Sequential()
         
+        self.batch_normalization = batch_normalization
+        
     def build_model(self):
-        """
-        # Input Layer
-        self.model.add(Dense(int(self.first_hidden_node), input_dim=self.input_dim))
-        self.model.add(Activation('relu'))
-        self.model.add(Dropout(0.5))
-        
-        # Hidden Layer
-        for i in range(self.hidden_layer):
-            self.model.add(Dense(int(self.first_hidden_node/(i+2))))
-            self.model.add(Activation('relu'))
-            self.model.add(Dropout(0.5))
-        
-        # Output Layer
-        self.model.add(Dense(self.output_dim))
-        self.model.add(Activation('sigmoid'))
-        """
-        
-        
-        # Input Layer
-        self.model.add(Dense(int(self.first_hidden_node), input_dim=self.input_dim))
-        self.model.add(BatchNormalization())
-        self.model.add(Activation('relu'))
-        self.model.add(Dropout(0.5))
-        
-        # Hidden Layer
-        for i in range(self.hidden_layer):
-            self.model.add(Dense(int(self.first_hidden_node/(i+2))))
+        if self.batch_normalization:
+            # Input Layer
+            self.model.add(Dense(int(self.first_hidden_node), input_dim=self.input_dim))
             self.model.add(BatchNormalization())
             self.model.add(Activation('relu'))
             self.model.add(Dropout(0.5))
+            
+            # Hidden Layer
+            for i in range(self.hidden_layer):
+                self.model.add(Dense(int(self.first_hidden_node/(i+2))))
+                self.model.add(BatchNormalization())
+                self.model.add(Activation('relu'))
+                self.model.add(Dropout(0.5))
+            
+            # Output Layer
+            self.model.add(Dense(self.output_dim))
+            self.model.add(BatchNormalization())
+            self.model.add(Activation('sigmoid'))
+        else:
+            # Input Layer
+            self.model.add(Dense(int(self.first_hidden_node), input_dim=self.input_dim))
+            self.model.add(Activation('relu'))
+            self.model.add(Dropout(0.5))
+            
+            # Hidden Layer
+            for i in range(self.hidden_layer):
+                self.model.add(Dense(int(self.first_hidden_node/(i+2))))
+                self.model.add(Activation('relu'))
+                self.model.add(Dropout(0.5))
+            
+            # Output Layer
+            self.model.add(Dense(self.output_dim))
+            self.model.add(Activation('sigmoid'))
         
-        # Output Layer
-        self.model.add(Dense(self.output_dim))
-        self.model.add(BatchNormalization())
-        self.model.add(Activation('sigmoid'))
-        
-        
-        adam = Adam(lr=0.00003)
+        adam = Adam(lr=self.learning_rate)
         
         self.model.compile(optimizer=adam,
                            loss='binary_crossentropy',
@@ -110,7 +110,7 @@ class Neural_Network:
     def predict(self, X_test, y_test):
         y_pred = self.model.predict_classes(X_test)
         
-        self.__draw_confusion_matrix__(self.y_test, y_pred)
+        self.__draw_confusion_matrix__(y_test, y_pred)
         
         return y_pred
     
@@ -129,7 +129,7 @@ class Neural_Network:
     def __draw_confusion_matrix__(self, y_test, y_pred):
         confmat = confusion_matrix(y_true=y_test, y_pred=y_pred)
         
-        fig, ax = plt.subplots(figsize=(3, 3))
+        fig, ax = plt.subplots(figsize=(5, 5))
         ax.matshow(confmat, cmap=plt.cm.Blues, alpha=0.3)
         for i in range(confmat.shape[0]):
             for j in range(confmat.shape[1]):
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     y_val = y_train[400000:]
     y_train = y_train[:400000]
     
-    nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=50)
+    nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=30, learning_rate=0.0003)
     nn.build_model()
     nn.fit(X_train, y_train, X_val, y_val)
     
@@ -164,20 +164,23 @@ if __name__ == "__main__":
     
     # [loss, accuracy, precision, recall]
     
-    # 20 hidden layers
+    # 20 hidden layers, lr = 0.00003
     # [0.16625044167637826, 0.9583875, 0.8767687260105649, 0.9962718793182865]
 
-    # 20 hidden layers + batch normalization
+    # 20 hidden layers + batch normalization, lr = 0.00003
     # [0.6413604638814926, 0.6710791666666667, 0, 0]
     
-    # 50 hidden layers
+    # 30 hidden layers, lr = 0.0003
+    # [0.17705267111559708, 0.9587958333333333, 0.8781241686829404, 0.9961487612806805]
+    
+    # 35 hidden layers, lr = 0.0003, batch size = 256
+    # []
+    
+    # 40 hidden layers, lr = 0.001, batch size = 256
+    # [0.2374726113875707, 0.952475]
+    
+    # 50 hidden layers, lr = 0.0003
     # 
     
-    # 50 hidden layers + batch normalization
-    # 
-    
-    # 100 hidden layers
-    # 
-
-    # 100 hidden layers + batch normalization
-    # 
+    # 50 hidden layers + batch normalization, lr = 0.00003
+    # [0.6413604638814926, 0.6710791666666667, 0, 0]

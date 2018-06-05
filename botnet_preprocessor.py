@@ -303,7 +303,7 @@ class Botnet_Processor:
         for f in range(self.X_train.shape[1]):
             print("%2d) %-*s %f" % (f + 1, 30, colnames[indices[f]], importances[indices[f]]))
     
-        return forest, y_pred
+        return forest, y_pred, importances
 
     def __draw_confusion_matrix__(self, y_test, y_pred):
         confmat = confusion_matrix(y_true=y_test, y_pred=y_pred)
@@ -333,5 +333,5 @@ if __name__ == "__main__":
     # [0.9958733333333334, 0.8219557195571956, 0.8843672456575682]
     lr, y_pred = botnet_processor.logistic_regression()
     
-    # 
-    lr, y_pred = botnet_processor.random_forest()
+    # [0.9968666666666667, 0.8440959409594095, 0.9327217125382263]
+    lr, y_pred, importances = botnet_processor.random_forest()

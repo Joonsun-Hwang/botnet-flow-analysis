@@ -311,7 +311,7 @@ class Botnet_Processor:
         lr.fit(self.X_train, self.y_train)
         print('Training accuracy:', lr.score(self.X_train, self.y_train))
         duration = datetime.now() - now
-        print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to the learning of Logistic Regression.-----')
+        print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to learn for Logistic Regression.-----')
         
         # Test
         print('Test accuracy:', lr.score(self.X_test, self.y_test))
@@ -343,7 +343,7 @@ class Botnet_Processor:
         forest.fit(self.X_train, self.y_train)
         print('Training accuracy:', forest.score(self.X_train, self.y_train))
         duration = datetime.now() - now
-        print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to the learning of Random Forest.-----')
+        print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to learn for Random Forest.-----')
         
         # Test
         print('Test accuracy:', forest.score(self.X_test, self.y_test))
@@ -393,7 +393,7 @@ class Botnet_Processor:
         selected_features = list(sbs.subsets_[list(sbs.scores_).index(max(list(sbs.scores_)))])
         
         duration = datetime.now() - now
-        print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to the selecting the features-----')
+        print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to select the features-----')
         
         return selected_features
         
@@ -405,7 +405,7 @@ class Botnet_Processor:
         X_test_lda = lda.transform(X_test)
         
         duration = datetime.now() - now
-        print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to the extracting the features-----')
+        print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to extract the features-----')
         
         return X_train_lda, X_test_lda
         
@@ -425,7 +425,7 @@ class Botnet_Processor:
 if __name__ == "__main__":
     from botnet_data_loader import Botnet_Data_Loader as loader
 
-    data = loader().botnet_data(sample_size=500000)
+    data = loader().botnet_data(sample_size=800000)
     
     botnet_processor = Botnet_Processor(data = data)
     botnet_processor.get_head(10)

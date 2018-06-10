@@ -18,12 +18,68 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import confusion_matrix
+from sklearn.base import clone
+from sklearn.metrics import accuracy_score
+from sklearn.lda import LDA
+from sklearn.decomposition import PCA
+from itertools import combinations
 
 # Set your working directory
 MY_WORKING_DIRECTORY = os.getcwd()
 
 # Set datetime string format
 DATETIME_FORMAT = '%Y/%m/%d %H:%M:%S.%f'
+
+class SBS():
+    def __init__(self, estimator, k_features, scoring=accuracy_score,
+                 test_size=0.25, random_state=1):
+        self.scoring = scoring
+        self.estimator = clone(estimator)
+        self.k_features = k_features
+        self.test_size = test_size
+        self.random_state = random_state
+
+    def fit(self, X, y):
+        
+        X_train, X_test, y_train, y_test = \
+                train_test_split(X, y, test_size=self.test_size, 
+                                 random_state=self.random_state)
+
+        dim = X_train.shape[1]
+        self.indices_ = tuple(range(dim))
+        self.subsets_ = [self.indices_]
+        score = self._calc_score(X_train, y_train, 
+                                 X_test, y_test, self.indices_)
+        self.scores_ = [score]
+
+        while dim > self.k_features:
+            scores = []
+            subsets = []
+
+            for p in combinations(self.indices_, r=dim-1):
+                score = self._calc_score(X_train, y_train, 
+                                         X_test, y_test, p)
+                scores.append(score)
+                subsets.append(p)
+
+            best = np.argmax(scores)
+            self.indices_ = subsets[best]
+            self.subsets_.append(self.indices_)
+            dim -= 1
+
+            self.scores_.append(scores[best])
+        self.k_score_ = self.scores_[-1]
+
+        return self
+
+    def transform(self, X):
+        return X[:, self.indices_]
+
+    def _calc_score(self, X_train, y_train, X_test, y_test, indices):
+        self.estimator.fit(X_train[:, indices], y_train)
+        y_pred = self.estimator.predict(X_test[:, indices])
+        score = self.scoring(y_test, y_pred)
+        return score
 
 class Botnet_Processor:
     
@@ -318,6 +374,54 @@ class Botnet_Processor:
         plt.show()
 
 
+    def feature_select(self, method, X_train, y_train):
+        print('Starting the feature selection')
+        
+        now = datetime.now()
+        
+        sbs = SBS(method, k_features=1)
+        sbs.fit(X_train, y_train)
+        
+        k_feat = [len(k) for k in sbs.subsets_]
+        plt.plot(k_feat, sbs.scores_, marker='o')
+        plt.ylim([0.5, 1.1])
+        plt.ylabel('Accuracy')
+        plt.xlabel('Number of featrues')
+        plt.grid()
+        plt.show()
+        
+        selected_features = list(sbs.subsets_[list(sbs.scores_).index(max(list(sbs.scores_)))])
+        
+        duration = datetime.now() - now
+        print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to the selecting the features-----')
+        
+        return selected_features
+        
+    def feature_extract_lda(self, lda, X_train, y_train, X_test):
+        print('Starting the feature extraction using lda')
+        now = datetime.now()
+        
+        X_train_lda = lda.fit_transform(X_train, y_train)
+        X_test_lda = lda.transform(X_test)
+        
+        duration = datetime.now() - now
+        print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to the extracting the features-----')
+        
+        return X_train_lda, X_test_lda
+        
+    def feature_extract_pca(self, pca, X_train, X_test):
+        print('Starting the feature extraction using pca')
+        now = datetime.now()
+        
+        X_train_pca = pca.fit_transform(X_train)
+        X_test_pca = pca.transform(X_test)
+        
+        duration = datetime.now() - now
+        print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to the extracting the features-----')
+        
+        return X_train_pca, X_test_pca
+
+
 if __name__ == "__main__":
     from botnet_data_loader import Botnet_Data_Loader as loader
 
@@ -331,7 +435,17 @@ if __name__ == "__main__":
     # test metrics: [accuracy, precision, recall]
     
     # [0.9958733333333334, 0.8219557195571956, 0.8843672456575682]
-    lr, y_pred = botnet_processor.logistic_regression()
+    # lr, y_pred = botnet_processor.logistic_regression()
     
     # [0.9968666666666667, 0.8440959409594095, 0.9327217125382263]
-    lr, y_pred, importances = botnet_processor.random_forest()
+    # lr, y_pred, importances = botnet_processor.random_forest()
+    
+    lr = LogisticRegression(penalty='l1', C=0.1)
+    selected_features = botnet_processor.feature_select(lr, X_train, y_train)
+    
+    lda = LDA(n_components=20)
+    X_train_lda, X_test_lda = botnet_processor.feature_extract_lda(lda, X_train, y_train, X_test)
+    
+    pca = PCA(n_components=20)
+    X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
+    

@@ -374,7 +374,6 @@ class Botnet_Processor:
         plt.ylabel('true label')
         plt.show()
 
-
     def feature_select(self, method, X_train, y_train):
         print('Starting the feature selection')
         
@@ -441,14 +440,38 @@ if __name__ == "__main__":
     # [0.9968666666666667, 0.8440959409594095, 0.9327217125382263]
     # lr, y_pred, importances = botnet_processor.random_forest()
     
-    lr = LogisticRegression(penalty='l1', C=0.1)
-    selected_features = botnet_processor.feature_select(lr, X_train, y_train)
+    # lr = LogisticRegression(penalty='l1', C=0.1)
+    # selected_features = botnet_processor.feature_select(lr, X_train, y_train)
     
-    lda = LDA(n_components=20)
+    # LDA and SVM
+    # [0.9958416666666666, 0.8365302032636702, 0.87249925350851]
+    lda = LDA(n_components=150)
     X_train_lda, X_test_lda = botnet_processor.feature_extract_lda(lda, X_train, y_train, X_test)
     
-    pca = PCA(n_components=20)
+    svm = SVC(kernel='rbf', gamma=10, C=1, random_state=0)
+    svm.fit(X_train_lda, y_train)
+    
+    y_pred = svm.predict(X_test_lda)
+    botnet_processor.__draw_confusion_matrix__(y_test, y_pred)
+    
+    # PCA and SVM    
+    pca = PCA(n_components=150)
     X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
     
-    svm = SVC(kernel='rbf', gamma=, C, random_state=)
+    svm = SVC(kernel='rbf', gamma=10, C=1, random_state=0)
+    svm.fit(X_train_pca, y_train)
+    
+    y_pred = svm.predict(X_test_pca)
+    botnet_processor.__draw_confusion_matrix__(y_test, y_pred)
+    
+    
+    # for data visualization & arena simulation
+    data = loader().botnet_data(scenarios=[5, 7, 11])
+    botnet_processor = Botnet_Processor(data = data)
+    botnet_processor.get_head(10)
+    treated_data = botnet_processor.__treat_data__()
+    
+    arena_data = treated_data[treated_data['BinaryLabel']==1]
+    arena_data.to_csv('/Users/junseon/Desktop/arena.csv')
+    
     

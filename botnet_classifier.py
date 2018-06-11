@@ -16,6 +16,7 @@ from keras import backend as K
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
 from sklearn.metrics import confusion_matrix
+from sklearn.lda import LDA
 import matplotlib.pyplot as plt
 
 
@@ -184,3 +185,31 @@ if __name__ == "__main__":
     
     # 50 hidden layers + batch normalization, lr = 0.00003
     # [0.6413604638814926, 0.6710791666666667, 0, 0]
+
+    data = loader().botnet_data(sample_size=800000, class_rate=0.5)
+    
+    botnet_processor = processor(data=data)
+    botnet_processor.get_head(10)
+    
+    X_train, X_test, y_train, y_test = botnet_processor.preprocess()
+    
+    lda = LDA(n_components=200)
+    X_train_lda, X_test_lda = botnet_processor.feature_extract_lda(lda, X_train, y_train, X_test)
+    
+    X_val = X_train_lda[400000:, :]
+    X_train = X_train_lda[:400000, :]
+    y_val = y_train[400000:]
+    y_train = y_train[:400000]
+    
+    # 20 hidden layers, lr = 0.0003, first_hidden_node=192
+    # [0.2268435451577107, 0.9352041666666666, 0.9894182566640991, 0.8419112906691881]
+    
+    # 30 hidden layers, lr = 0.0001, first_hidden_node=192
+    # [0.22444853990276656, 0.9560041666666667, 0.893412296541361, 0.9709345409633594]
+    nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=30, learning_rate=0.00009, first_hidden_node=192)
+    nn.build_model()
+    nn.fit(X_train, y_train, X_val, y_val)
+    
+    print(nn.evaluate(X_test_lda, y_test))
+    y_pred = nn.predict(X_test_lda, y_test)
+    

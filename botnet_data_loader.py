@@ -15,11 +15,22 @@ MY_WORKING_DIRECTORY = os.getcwd()
 
 class Botnet_Data_Loader:
     
-    def botnet_data(self, sample_size=None, class_rate=None):
+    def botnet_data(self, sample_size=None, class_rate=None, scenarios=[]):
         now = datetime.now()
         print('Currently, data is being read. It may take some time.')
-        all_csv_files = glob.glob(os.path.join(MY_WORKING_DIRECTORY, 'CTU-13-Dataset/*.csv'))
-        df = pd.concat((pd.read_csv(f) for f in all_csv_files))
+        
+        if isinstance(scenarios, list):
+            if scenarios:
+                csv_files = []
+                for scen_id in scenarios:
+                    csv_files.append(os.path.join(MY_WORKING_DIRECTORY, 'CTU-13-Dataset', ('capture_' + str(scen_id) + '.binetflow.csv')))
+                df = pd.concat((pd.read_csv(f) for f in csv_files))
+            else:
+                all_csv_files = glob.glob(os.path.join(MY_WORKING_DIRECTORY, 'CTU-13-Dataset/*.csv'))
+                df = pd.concat((pd.read_csv(f) for f in all_csv_files))
+        else:
+            print('You should input list of integer for senario parameter')
+            return
         
         if class_rate:
             if class_rate < 0.3:

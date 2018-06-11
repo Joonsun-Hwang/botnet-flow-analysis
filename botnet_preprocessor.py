@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from sklearn.cross_validation import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import confusion_matrix
 from sklearn.base import clone
@@ -448,4 +449,6 @@ if __name__ == "__main__":
     
     pca = PCA(n_components=20)
     X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
+    
+    svm = SVC(kernel='rbf', gamma=, C, random_state=)
     

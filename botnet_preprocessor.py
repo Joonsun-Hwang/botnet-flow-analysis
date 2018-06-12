@@ -425,12 +425,17 @@ class Botnet_Processor:
 if __name__ == "__main__":
     from botnet_data_loader import Botnet_Data_Loader as loader
 
-    data = loader().botnet_data(sample_size=800000)
+    data = loader().botnet_data(sample_size=800000, class_rate=0.5)
     
     botnet_processor = Botnet_Processor(data = data)
     botnet_processor.get_head(10)
     
     X_train, X_test, y_train, y_test = botnet_processor.preprocess()
+    
+    attack_train = X_train[y_train==1]
+    not_attack_train = X_train[y_train==0]
+    attack_test = X_test[y_test==1]
+    not_attack_test = X_test[y_test==0]
     
     # test metrics: [accuracy, precision, recall]
     
@@ -473,5 +478,4 @@ if __name__ == "__main__":
     
     arena_data = treated_data[treated_data['BinaryLabel']==1]
     arena_data.to_csv('/Users/junseon/Desktop/arena.csv')
-    
     

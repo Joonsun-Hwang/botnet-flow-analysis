@@ -68,4 +68,14 @@ class Botnet_Data_Loader:
         not_botnet = self.__random_sampling__(not_botnet, not_botnet_sample_size)
         
         return pd.concat([botnet, not_botnet], ignore_index=True)
+
+
+if __name__ == "__main__":
+    loader = Botnet_Data_Loader()
+    data = loader.botnet_data()
     
+    botnet = data[data['Label'].str.contains('Botnet')]
+    background = data[data['Label'].str.contains('Background')]
+    normal = data[data['Label'].str.contains('Normal')]
+    
+    label_freq = data['Label'].value_counts()

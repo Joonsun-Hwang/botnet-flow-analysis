@@ -314,7 +314,7 @@ class Botnet_Processor:
         y_pred = lr.predict(X_test)
         self.__draw_confusion_matrix__(y_test, y_pred)
         
-        return lr, y_pred
+        return lr, y_pred, lr.score(X_test, y_test)
     
     def random_forest(self, X_train, y_train, X_test, y_test, calculate_impoartances=False):
         
@@ -432,29 +432,31 @@ if __name__ == "__main__":
             
             print("*****************************")
             
-    components = [30, 50, 70, 90, 110, 130, 150, 170]
+    test_acc_list = []
+    components = range(50, 250, 10)
     penalty = 'l1'
     C = 100
-    data = data_d
+    
+    botnet_processor = Botnet_Processor(data = data_d)
+    botnet_processor.get_head(10)
+    
+    X_train, X_test, y_train, y_test = botnet_processor.preprocess()
+    
+    X_val = X_train[400000:, :]
+    X_train = X_train[:400000, :]
+    y_val = y_train[400000:]
+    y_train = y_train[:400000]
+        
     for component in components:
         print("*****************************")
         print('component:', component)
-        
-        botnet_processor = Botnet_Processor(data = data)
-        botnet_processor.get_head(10)
-        
-        X_train, X_test, y_train, y_test = botnet_processor.preprocess()
-        
-        X_val = X_train[400000:, :]
-        X_train = X_train[:400000, :]
-        y_val = y_train[400000:]
-        y_train = y_train[:400000]
-        lr, y_pred = botnet_processor.logistic_regression(X_train, y_train, X_test, y_test, penalty, C)
+        # lr, y_pred = botnet_processor.logistic_regression(X_train, y_train, X_test, y_test, penalty, C)
                 
         pca = PCA(n_components=component)
         X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
-        lr, y_pred = botnet_processor.logistic_regression(X_train_pca, y_train, X_test_pca, y_test, penalty, C)
+        lr, y_pred, accuracy = botnet_processor.logistic_regression(X_train_pca, y_train, X_test_pca, y_test, penalty, C)
         
+        test_acc_list.append(accuracy)
         print("*****************************")
     # test metrics: [accuracy, precision, recall]
     

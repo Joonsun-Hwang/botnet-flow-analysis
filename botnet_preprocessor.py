@@ -294,47 +294,32 @@ class Botnet_Processor:
             
         return X_train, X_test, y_train, y_test
 
-    def logistic_regression(self):
-        if self.preprocessed_data.empty:
-            print('You must run preprocess method.\n')
-            print('Ex)')
-            print('botnet_processor = botnet_processor()')
-            print('X_train, X_test, y_train, y_test = botnet_processor.preprocess()')
-            
-            return None
+    def logistic_regression(self, X_train, y_train, X_test, y_test, penalty, C):
         
         now = datetime.now()
         # Init LogisticRegression
-        lr = LogisticRegression(penalty='l1', C=0.1)
+        lr = LogisticRegression(penalty=penalty, C=C)
         
         # Learning
         print('Starting the learning of Logistic Regression')
-        lr.fit(self.X_train, self.y_train)
-        print('Training accuracy:', lr.score(self.X_train, self.y_train))
+        lr.fit(X_train, y_train)
+        print('Training accuracy:', lr.score(X_train, y_train))
         duration = datetime.now() - now
         print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to learn for Logistic Regression.-----')
         
         # Test
-        print('Test accuracy:', lr.score(self.X_test, self.y_test))
+        print('Test accuracy:', lr.score(X_test, y_test))
         
         # Predict
-        y_pred = lr.predict(self.X_test)
-        self.__draw_confusion_matrix__(self.y_test, y_pred)
+        y_pred = lr.predict(X_test)
+        self.__draw_confusion_matrix__(y_test, y_pred)
         
         return lr, y_pred
     
-    def random_forest(self):
-        if self.preprocessed_data.empty:
-            print('You must run preprocess method.\n')
-            print('Ex)')
-            print('botnet_processor = botnet_processor()')
-            print('X_train, X_test, y_train, y_test = botnet_processor.preprocess()')
-            
-            return None
+    def random_forest(self, X_train, y_train, X_test, y_test, calculate_impoartances=False):
         
         # Evaluation of the importance of features
         now = datetime.now()
-        colnames = self.preprocessed_data.columns[:self.preprocessed_data.shape[1]-1]
         
         # Init RandomRorest
         forest = RandomForestClassifier(n_estimators=10000, random_state=0, n_jobs=-1)
@@ -353,14 +338,19 @@ class Botnet_Processor:
         y_pred = forest.predict(self.X_test)
         self.__draw_confusion_matrix__(self.y_test, y_pred)
         
-        # Calculating the importance of each feature
-        print("Starting the calculation of features' importance")
-        importances = forest.feature_importances_
-        indices = np.argsort(importances)[::-1]
-        for f in range(self.X_train.shape[1]):
-            print("%2d) %-*s %f" % (f + 1, 30, colnames[indices[f]], importances[indices[f]]))
-    
-        return forest, y_pred, importances
+        if calculate_impoartances:
+            # Calculating the importance of each feature
+            print("Starting the calculation of features' importance")
+            colnames = self.preprocessed_data.columns[:self.preprocessed_data.shape[1]-1]
+            importances = forest.feature_importances_
+            indices = np.argsort(importances)[::-1]
+            
+            for f in range(self.X_train.shape[1]):
+                print("%2d) %-*s %f" % (f + 1, 30, colnames[indices[f]], importances[indices[f]]))
+        
+            return forest, y_pred, importances
+        else:
+            return forest, y_pred
 
     def __draw_confusion_matrix__(self, y_test, y_pred):
         confmat = confusion_matrix(y_true=y_test, y_pred=y_pred)
@@ -397,18 +387,6 @@ class Botnet_Processor:
         
         return selected_features
         
-    def feature_extract_lda(self, lda, X_train, y_train, X_test):
-        print('Starting the feature extraction using lda')
-        now = datetime.now()
-        
-        X_train_lda = lda.fit_transform(X_train, y_train)
-        X_test_lda = lda.transform(X_test)
-        
-        duration = datetime.now() - now
-        print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to extract the features-----')
-        
-        return X_train_lda, X_test_lda
-        
     def feature_extract_pca(self, pca, X_train, X_test):
         print('Starting the feature extraction using pca')
         now = datetime.now()
@@ -425,18 +403,59 @@ class Botnet_Processor:
 if __name__ == "__main__":
     from botnet_data_loader import Botnet_Data_Loader as loader
 
-    data = loader().botnet_data(sample_size=800000, class_rate=0.5)
+    data_a = loader().botnet_data(sample_size=800000)
+    data_d = loader().botnet_data(sample_size=800000, class_rate=0.5)
     
-    botnet_processor = Botnet_Processor(data = data)
-    botnet_processor.get_head(10)
+    penalty = 'l1'
+    C_list = [0.1, 1, 10, 100]
+    for C in C_list:
+        for idx, data in enumerate([data_a, data_d]):
+            print("*****************************")
+            print("Data: ", idx)
+            print("C: ", C)
+            
+            botnet_processor = Botnet_Processor(data = data)
+            botnet_processor.get_head(10)
+            
+            X_train, X_test, y_train, y_test = botnet_processor.preprocess()
+            
+            X_val = X_train[400000:, :]
+            X_train = X_train[:400000, :]
+            y_val = y_train[400000:]
+            y_train = y_train[:400000]
     
-    X_train, X_test, y_train, y_test = botnet_processor.preprocess()
-    
-    attack_train = X_train[y_train==1]
-    not_attack_train = X_train[y_train==0]
-    attack_test = X_test[y_test==1]
-    not_attack_test = X_test[y_test==0]
-    
+            lr, y_pred = botnet_processor.logistic_regression(X_train, y_train, X_test, y_test, penalty, C)
+            
+            pca = PCA(n_components=150)
+            X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
+            lr, y_pred = botnet_processor.logistic_regression(X_train_pca, y_train, X_test_pca, y_test, penalty, C)
+            
+            print("*****************************")
+            
+    components = [30, 50, 70, 90, 110, 130, 150, 170]
+    penalty = 'l1'
+    C = 100
+    data = data_d
+    for component in components:
+        print("*****************************")
+        print('component:', component)
+        
+        botnet_processor = Botnet_Processor(data = data)
+        botnet_processor.get_head(10)
+        
+        X_train, X_test, y_train, y_test = botnet_processor.preprocess()
+        
+        X_val = X_train[400000:, :]
+        X_train = X_train[:400000, :]
+        y_val = y_train[400000:]
+        y_train = y_train[:400000]
+        lr, y_pred = botnet_processor.logistic_regression(X_train, y_train, X_test, y_test, penalty, C)
+                
+        pca = PCA(n_components=component)
+        X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
+        lr, y_pred = botnet_processor.logistic_regression(X_train_pca, y_train, X_test_pca, y_test, penalty, C)
+        
+        print("*****************************")
     # test metrics: [accuracy, precision, recall]
     
     # [0.9958733333333334, 0.8219557195571956, 0.8843672456575682]

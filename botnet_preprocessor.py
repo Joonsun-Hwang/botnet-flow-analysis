@@ -21,7 +21,6 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import confusion_matrix
 from sklearn.base import clone
 from sklearn.metrics import accuracy_score
-from sklearn.lda import LDA
 from sklearn.decomposition import PCA
 from itertools import combinations
 
@@ -294,7 +293,7 @@ class Botnet_Processor:
             
         return X_train, X_test, y_train, y_test
 
-    def logistic_regression(self, X_train, y_train, X_test, y_test, penalty, C):
+    def logistic_regression(self, X_train, y_train, X_test, y_test, penalty='l2', C=1):
         
         now = datetime.now()
         # Init LogisticRegression
@@ -314,29 +313,28 @@ class Botnet_Processor:
         y_pred = lr.predict(X_test)
         self.__draw_confusion_matrix__(y_test, y_pred)
         
-        return lr, y_pred, lr.score(X_test, y_test)
+        return lr, y_pred
     
-    def random_forest(self, X_train, y_train, X_test, y_test, calculate_impoartances=False):
+    def random_forest(self, X_train, y_train, X_test, y_test, n_estimators=10000, calculate_impoartances=False):
         
-        # Evaluation of the importance of features
         now = datetime.now()
         
         # Init RandomRorest
-        forest = RandomForestClassifier(n_estimators=10000, random_state=0, n_jobs=-1)
+        forest = RandomForestClassifier(n_estimators=n_estimators, random_state=0, n_jobs=-1)
         
         # Learning
         print('Starting the learning of Random Forest')
-        forest.fit(self.X_train, self.y_train)
-        print('Training accuracy:', forest.score(self.X_train, self.y_train))
+        forest.fit(X_train, y_train)
+        print('Training accuracy:', forest.score(X_train, y_train))
         duration = datetime.now() - now
         print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to learn for Random Forest.-----')
         
         # Test
-        print('Test accuracy:', forest.score(self.X_test, self.y_test))
+        print('Test accuracy:', forest.score(X_test, y_test))
         
         # Predict
-        y_pred = forest.predict(self.X_test)
-        self.__draw_confusion_matrix__(self.y_test, y_pred)
+        y_pred = forest.predict(X_test)
+        self.__draw_confusion_matrix__(y_test, y_pred)
         
         if calculate_impoartances:
             # Calculating the importance of each feature
@@ -351,6 +349,27 @@ class Botnet_Processor:
             return forest, y_pred, importances
         else:
             return forest, y_pred
+        
+    def support_vector_machine(self, X_train, y_train, X_test, y_test, C=1, gamma=0.1):
+        now = datetime.now()
+        
+        svm = SVC(kernel='rbf', C=C, gamma=gamma, random_state=0)
+        
+        # Learning
+        print('Starting the learning of SVM')
+        svm.fit(X_train, y_train)
+        print('Training accuracy:', svm.score(X_train, y_train))
+        duration = datetime.now() - now
+        print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to learn for SVM.-----')
+        
+        # Test
+        print('Test accuracy:', svm.score(X_test, y_test))
+        
+        # Predict
+        y_pred = svm.predict(X_test)
+        self.__draw_confucion_matrix__(y_test, y_pred)
+        
+        return svm, y_pred
 
     def __draw_confusion_matrix__(self, y_test, y_pred):
         confmat = confusion_matrix(y_true=y_test, y_pred=y_pred)
@@ -406,39 +425,14 @@ if __name__ == "__main__":
     data_a = loader().botnet_data(sample_size=800000)
     data_d = loader().botnet_data(sample_size=800000, class_rate=0.5)
     
-    penalty = 'l1'
-    C_list = [0.1, 1, 10, 100]
-    for C in C_list:
-        for idx, data in enumerate([data_a, data_d]):
-            print("*****************************")
-            print("Data: ", idx)
-            print("C: ", C)
-            
-            botnet_processor = Botnet_Processor(data = data)
-            botnet_processor.get_head(10)
-            
-            X_train, X_test, y_train, y_test = botnet_processor.preprocess()
-            
-            X_val = X_train[400000:, :]
-            X_train = X_train[:400000, :]
-            y_val = y_train[400000:]
-            y_train = y_train[:400000]
-    
-            lr, y_pred = botnet_processor.logistic_regression(X_train, y_train, X_test, y_test, penalty, C)
-            
-            pca = PCA(n_components=150)
-            X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
-            lr, y_pred = botnet_processor.logistic_regression(X_train_pca, y_train, X_test_pca, y_test, penalty, C)
-            
-            print("*****************************")
-            
+    # Greed search for n_components of PCA
     test_acc_list = []
     components = range(50, 250, 10)
     penalty = 'l1'
     C = 100
     
     botnet_processor = Botnet_Processor(data = data_d)
-    botnet_processor.get_head(10)
+    print(botnet_processor.get_head(10))
     
     X_train, X_test, y_train, y_test = botnet_processor.preprocess()
     
@@ -454,47 +448,93 @@ if __name__ == "__main__":
                 
         pca = PCA(n_components=component)
         X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
-        lr, y_pred, accuracy = botnet_processor.logistic_regression(X_train_pca, y_train, X_test_pca, y_test, penalty, C)
+        lr, y_pred = botnet_processor.logistic_regression(X_train_pca, y_train, X_test_pca, y_test, penalty, C)
         
-        test_acc_list.append(accuracy)
         print("*****************************")
-    # test metrics: [accuracy, precision, recall]
     
-    # [0.9958733333333334, 0.8219557195571956, 0.8843672456575682]
-    # lr, y_pred = botnet_processor.logistic_regression()
+    # Test Logistic Regression
+    penalty = 'l1'
+    C_list = [1, 10, 100, 200]
+    for idx, data in enumerate([data_a, data_d]):
+        botnet_processor = Botnet_Processor(data = data)
+        
+        X_train, X_test, y_train, y_test = botnet_processor.preprocess()
+        
+        X_val = X_train[400000:, :]
+        X_train = X_train[:400000, :]
+        y_val = y_train[400000:]
+        y_train = y_train[:400000]
+        
+        for C in C_list:
+            print("*****************************")
+            print("Data: ", idx)
+            print("C: ", C)
     
-    # [0.9968666666666667, 0.8440959409594095, 0.9327217125382263]
-    # lr, y_pred, importances = botnet_processor.random_forest()
+            lr, y_pred, accuracy = botnet_processor.logistic_regression(X_train, y_train, X_test, y_test, penalty, C)
+            
+            pca = PCA(n_components=110)
+            X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
+            lr, y_pred = botnet_processor.logistic_regression(X_train_pca, y_train, X_test_pca, y_test, penalty, C)
+            
+            print("*****************************")
+            
+    # Test SVM
+    C_list = [1, 10, 100]
+    gamma_list = [0.1, 1, 10]
+    for idx, data in enumerate([data_a, data_d]):
+        botnet_processor = Botnet_Processor(data = data)
+        
+        X_train, X_test, y_train, y_test = botnet_processor.preprocess()
+        
+        X_val = X_train[400000:, :]
+        X_train = X_train[:400000, :]
+        y_val = y_train[400000:]
+        y_train = y_train[:400000]
+        
+        for C in C_list:
+            for gamma in gamma_list:
+                print("*****************************")
+                print("Data: ", idx)
+                print("C: ", C)
+                print("gamma: ", gamma)
+        
+                lr, y_pred = botnet_processor.support_vector_machine(X_train, y_train, X_test, y_test, C, gamma)
+                
+                pca = PCA(n_components=110)
+                X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
+                lr, y_pred = botnet_processor.support_vector_machine(X_train_pca, y_train, X_test_pca, y_test, C, gamma)
+                
+                print("*****************************")
+                
+    # Test Random Forest
+    n_list = [1000, 5000, 10000]
+    for idx, data in enumerate([data_d]):
+        botnet_processor = Botnet_Processor(data = data)
+        
+        X_train, X_test, y_train, y_test = botnet_processor.preprocess()
+        
+        X_val = X_train[400000:, :]
+        X_train = X_train[:400000, :]
+        y_val = y_train[400000:]
+        y_train = y_train[:400000]
+        
+        for n in n_list:
+            print("*****************************")
+            print("Data: ", idx)
+            print("n: ", n)
     
-    # lr = LogisticRegression(penalty='l1', C=0.1)
-    # selected_features = botnet_processor.feature_select(lr, X_train, y_train)
+            lr, y_pred = botnet_processor.random_forest(X_train, y_train, X_test, y_test, n)
+        
+            pca = PCA(n_components=110)
+            X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
+            lr, y_pred = botnet_processor.random_forest(X_train_pca, y_train, X_test_pca, y_test, n)
+                
+            print("*****************************")
     
-    # LDA and SVM
-    # [0.9958416666666666, 0.8365302032636702, 0.87249925350851]
-    lda = LDA(n_components=150)
-    X_train_lda, X_test_lda = botnet_processor.feature_extract_lda(lda, X_train, y_train, X_test)
-    
-    svm = SVC(kernel='rbf', gamma=10, C=1, random_state=0)
-    svm.fit(X_train_lda, y_train)
-    
-    y_pred = svm.predict(X_test_lda)
-    botnet_processor.__draw_confusion_matrix__(y_test, y_pred)
-    
-    # PCA and SVM    
-    pca = PCA(n_components=150)
-    X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
-    
-    svm = SVC(kernel='rbf', gamma=10, C=1, random_state=0)
-    svm.fit(X_train_pca, y_train)
-    
-    y_pred = svm.predict(X_test_pca)
-    botnet_processor.__draw_confusion_matrix__(y_test, y_pred)
-    
-    
-    # for data visualization & arena simulation
+    # Export data visualization & arena simulation
     data = loader().botnet_data(scenarios=[5, 7, 11])
     botnet_processor = Botnet_Processor(data = data)
-    botnet_processor.get_head(10)
+    print(botnet_processor.get_head(10))
     treated_data = botnet_processor.__treat_data__()
     
     arena_data = treated_data[treated_data['BinaryLabel']==1]

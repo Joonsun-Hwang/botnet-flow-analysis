@@ -406,17 +406,18 @@ class Botnet_Processor:
         
         return selected_features
         
-    def feature_extract_pca(self, pca, X_train, X_test):
+    def feature_extract_pca(self, pca, X_train, X_val, X_test):
         print('Starting the feature extraction using pca')
         now = datetime.now()
         
         X_train_pca = pca.fit_transform(X_train)
+        X_val_pca = pca.transform(X_val)
         X_test_pca = pca.transform(X_test)
         
         duration = datetime.now() - now
         print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to the extracting the features-----')
         
-        return X_train_pca, X_test_pca
+        return X_train_pca, X_val_pca, X_test_pca
 
 
 if __name__ == "__main__":
@@ -447,7 +448,7 @@ if __name__ == "__main__":
         # lr, y_pred = botnet_processor.logistic_regression(X_train, y_train, X_test, y_test, penalty, C)
                 
         pca = PCA(n_components=component)
-        X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
+        X_train_pca, X_val_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_val, X_test)
         lr, y_pred = botnet_processor.logistic_regression(X_train_pca, y_train, X_test_pca, y_test, penalty, C)
         
         print("*****************************")
@@ -473,7 +474,7 @@ if __name__ == "__main__":
             lr, y_pred, accuracy = botnet_processor.logistic_regression(X_train, y_train, X_test, y_test, penalty, C)
             
             pca = PCA(n_components=110)
-            X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
+            X_train_pca, X_val_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_val, X_test)
             lr, y_pred = botnet_processor.logistic_regression(X_train_pca, y_train, X_test_pca, y_test, penalty, C)
             
             print("*****************************")
@@ -501,7 +502,7 @@ if __name__ == "__main__":
                 lr, y_pred = botnet_processor.support_vector_machine(X_train, y_train, X_test, y_test, C, gamma)
                 
                 pca = PCA(n_components=110)
-                X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
+                X_train_pca, X_val_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_val, X_test)
                 lr, y_pred = botnet_processor.support_vector_machine(X_train_pca, y_train, X_test_pca, y_test, C, gamma)
                 
                 print("*****************************")
@@ -527,7 +528,7 @@ if __name__ == "__main__":
                 lr, y_pred = botnet_processor.random_forest(X_train, y_train, X_test, y_test, n)
         
             pca = PCA(n_components=110)
-            X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)
+            X_train_pca, X_val_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_val, X_test)
             lr, y_pred = botnet_processor.random_forest(X_train_pca, y_train, X_test_pca, y_test, n)
                 
             print("*****************************")

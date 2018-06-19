@@ -16,13 +16,14 @@ from keras import backend as K
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
 from sklearn.metrics import confusion_matrix
-from sklearn.lda import LDA
+from sklearn.decomposition import PCA
+
 import matplotlib.pyplot as plt
 
 
 class Neural_Network:
 
-    def __init__(self, input_dim, output_dim=1, learning_rate=0.00003, epochs=10000, batch_size=256, hidden_layer=10, first_hidden_node=258, batch_normalization=False):
+    def __init__(self, input_dim, output_dim=1, learning_rate=0.0003, epochs=10000, batch_size=256, hidden_layer=10, batch_normalization=False):
         self.input_dim = input_dim
         self.output_dim = output_dim
         
@@ -30,7 +31,7 @@ class Neural_Network:
         self.epochs = epochs
         self.batch_size = batch_size
         self.hidden_layer = hidden_layer-1
-        self.first_hidden_node = first_hidden_node
+        self.first_hidden_node = input_dim
         
         self.model = Sequential()
         
@@ -144,10 +145,9 @@ if __name__ == "__main__":
     from botnet_data_loader import Botnet_Data_Loader as loader
     from botnet_preprocessor import Botnet_Processor as processor
 
-    data = loader().botnet_data(sample_size=800000, class_rate=0.5)
+    data = loader().botnet_data(sample_size=800000)
     
     botnet_processor = processor(data=data)
-    botnet_processor.get_head(10)
     
     X_train, X_test, y_train, y_test = botnet_processor.preprocess()
     
@@ -156,6 +156,28 @@ if __name__ == "__main__":
     y_val = y_train[400000:]
     y_train = y_train[:400000]
     
+    pca = PCA(n_components=110)
+    X_train_pca, X_val_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_val, X_test)
+    
+    # 1
+    # 98.54, Inf, 0
+    # 98.54, Inf, 0
+    nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=25, learning_rate=0.0003)
+    nn.build_model()
+    nn.fit(X_train, y_train, X_val, y_val)
+    
+    print(nn.evaluate(X_test, y_test))
+    y_pred = nn.predict(X_test, y_test)
+    nn = Neural_Network(input_dim=X_train_pca.shape[1], hidden_layer=25, learning_rate=0.0003)
+    nn.build_model()
+    nn.fit(X_train_pca, y_train, X_val_pca, y_val)
+    
+    print(nn.evaluate(X_test_pca, y_test))
+    y_pred = nn.predict(X_test_pca, y_test)
+    
+    # 2
+    # 98.54, Inf, 0
+    # 98.54, Inf, 0
     nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=30, learning_rate=0.0003)
     nn.build_model()
     nn.fit(X_train, y_train, X_val, y_val)
@@ -163,53 +185,87 @@ if __name__ == "__main__":
     print(nn.evaluate(X_test, y_test))
     y_pred = nn.predict(X_test, y_test)
     
-    # [loss, accuracy, precision, recall]
+    nn = Neural_Network(input_dim=X_train_pca.shape[1], hidden_layer=30, learning_rate=0.0003)
+    nn.build_model()
+    nn.fit(X_train_pca, y_train, X_val_pca, y_val)
     
-    # 20 hidden layers, lr = 0.00003
-    # [0.16625044167637826, 0.9583875, 0.8767687260105649, 0.9962718793182865]
-
-    # 20 hidden layers + batch normalization, lr = 0.00003
-    # [0.6413604638814926, 0.6710791666666667, 0, 0]
+    print(nn.evaluate(X_test_pca, y_test))
+    y_pred = nn.predict(X_test_pca, y_test)
     
-    # 30 hidden layers, lr = 0.0003
-    # [0.17705267111559708, 0.9587958333333333, 0.8781241686829404, 0.9961487612806805]
-    
-    # 35 hidden layers, lr = 0.0003, batch size = 256
-    # []
-    
-    # 40 hidden layers, lr = 0.001, batch size = 256
-    # [0.2374726113875707, 0.952475]
-    
-    # 50 hidden layers, lr = 0.0003
-    # 
-    
-    # 50 hidden layers + batch normalization, lr = 0.00003
-    # [0.6413604638814926, 0.6710791666666667, 0, 0]
-
-    data = loader().botnet_data(sample_size=800000, class_rate=0.5)
-    
-    botnet_processor = processor(data=data)
-    botnet_processor.get_head(10)
-    
-    X_train, X_test, y_train, y_test = botnet_processor.preprocess()
-    
-    lda = LDA(n_components=200)
-    X_train_lda, X_test_lda = botnet_processor.feature_extract_lda(lda, X_train, y_train, X_test)
-    
-    X_val = X_train_lda[400000:, :]
-    X_train = X_train_lda[:400000, :]
-    y_val = y_train[400000:]
-    y_train = y_train[:400000]
-    
-    # 20 hidden layers, lr = 0.0003, first_hidden_node=192
-    # [0.2268435451577107, 0.9352041666666666, 0.9894182566640991, 0.8419112906691881]
-    
-    # 30 hidden layers, lr = 0.0001, first_hidden_node=192
-    # [0.22444853990276656, 0.9560041666666667, 0.893412296541361, 0.9709345409633594]
-    nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=30, learning_rate=0.00009, first_hidden_node=192)
+    # 3
+    # 98.54, Inf, 0
+    # 98.54, Inf, 0
+    nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=35, learning_rate=0.0003)
     nn.build_model()
     nn.fit(X_train, y_train, X_val, y_val)
     
-    print(nn.evaluate(X_test_lda, y_test))
-    y_pred = nn.predict(X_test_lda, y_test)
+    print(nn.evaluate(X_test, y_test))
+    y_pred = nn.predict(X_test, y_test)
+    
+    nn = Neural_Network(input_dim=X_train_pca.shape[1], hidden_layer=35, learning_rate=0.0003)
+    nn.build_model()
+    nn.fit(X_train_pca, y_train, X_val_pca, y_val)
+    
+    print(nn.evaluate(X_test_pca, y_test))
+    y_pred = nn.predict(X_test_pca, y_test)
+    
+    
+    data = loader().botnet_data(sample_size=800000, class_rate=0.5)
+    
+    botnet_processor = processor(data=data)
+    
+    X_train, X_test, y_train, y_test = botnet_processor.preprocess()
+    
+    X_val = X_train[400000:, :]
+    X_train = X_train[:400000, :]
+    y_val = y_train[400000:]
+    y_train = y_train[:400000]
+    
+    pca = PCA(n_components=110)
+    X_train_pca, X_val_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_val, X_test)
+    
+    # 4
+    nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=25, learning_rate=0.0003)
+    nn.build_model()
+    nn.fit(X_train, y_train, X_val, y_val)
+    
+    print(nn.evaluate(X_test, y_test))
+    y_pred = nn.predict(X_test, y_test)
+    
+    nn = Neural_Network(input_dim=X_train_pca.shape[1], hidden_layer=25, learning_rate=0.0003)
+    nn.build_model()
+    nn.fit(X_train_pca, y_train, X_val_pca, y_val)
+    
+    print(nn.evaluate(X_test_pca, y_test))
+    y_pred = nn.predict(X_test_pca, y_test)
+    
+    # 5
+    nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=30, learning_rate=0.0003)
+    nn.build_model()
+    nn.fit(X_train, y_train, X_val, y_val)
+    
+    print(nn.evaluate(X_test, y_test))
+    y_pred = nn.predict(X_test, y_test)
+    
+    nn = Neural_Network(input_dim=X_train_pca.shape[1], hidden_layer=30, learning_rate=0.0003)
+    nn.build_model()
+    nn.fit(X_train_pca, y_train, X_val_pca, y_val)
+    
+    print(nn.evaluate(X_test_pca, y_test))
+    y_pred = nn.predict(X_test_pca, y_test)
+    
+    # 6
+    nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=35, learning_rate=0.0003)
+    nn.build_model()
+    nn.fit(X_train, y_train, X_val, y_val)
+    
+    print(nn.evaluate(X_test, y_test))
+    y_pred = nn.predict(X_test, y_test)
+    
+    nn = Neural_Network(input_dim=X_train_pca.shape[1], hidden_layer=35, learning_rate=0.0003)
+    nn.build_model()
+    nn.fit(X_train_pca, y_train, X_val_pca, y_val)
+    
+    print(nn.evaluate(X_test_pca, y_test))
+    y_pred = nn.predict(X_test_pca, y_test)
     

@@ -507,8 +507,8 @@ if __name__ == "__main__":
                 print("*****************************")
                 
     # Test Random Forest
-    n_list = [1000, 5000, 10000]
-    for idx, data in enumerate([data_d]):
+    n_list = [10000]
+    for idx, data in enumerate([data_a, data_d]):
         botnet_processor = Botnet_Processor(data = data)
         
         X_train, X_test, y_train, y_test = botnet_processor.preprocess()
@@ -523,7 +523,8 @@ if __name__ == "__main__":
             print("Data: ", idx)
             print("n: ", n)
     
-            lr, y_pred = botnet_processor.random_forest(X_train, y_train, X_test, y_test, n)
+            if idx == 1:
+                lr, y_pred = botnet_processor.random_forest(X_train, y_train, X_test, y_test, n)
         
             pca = PCA(n_components=110)
             X_train_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_test)

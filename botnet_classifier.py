@@ -216,7 +216,7 @@ if __name__ == "__main__":
     print(nn.evaluate(X_test_pca, y_test))
     y_pred = nn.predict(X_test_pca, y_test)
     
-    
+    # ------------------------------------------------------------
     data = loader().botnet_data(sample_size=800000, class_rate=0.5)
     
     botnet_processor = processor(data=data)
@@ -280,6 +280,34 @@ if __name__ == "__main__":
     y_pred = nn.predict(X_test, y_test)
     
     nn = Neural_Network(input_dim=X_train_pca.shape[1], hidden_layer=35, learning_rate=0.0003)
+    nn.build_model()
+    nn.fit(X_train_pca, y_train, X_val_pca, y_val)
+    
+    print(nn.evaluate(X_test_pca, y_test))
+    y_pred = nn.predict(X_test_pca, y_test)
+    
+    # ------------------------------------------------------------
+    data = loader().botnet_data(sample_size=800000, class_rate=0.5)
+    
+    botnet_processor = processor(data=data)
+    
+    X_train, X_test, y_train, y_test = botnet_processor.preprocess()
+    
+    X_val = X_train[400000:, :]
+    X_train = X_train[:400000, :]
+    y_val = y_train[400000:]
+    y_train = y_train[:400000]
+    
+    pca = PCA(n_components=110)
+    X_train_pca, X_val_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_val, X_test)
+    
+    mms = MinMaxScaler()
+        
+    X_train_pca = mms.fit_transform(X_train_pca)
+    X_val_pca = mms.transform(X_val_pca)
+    X_test_pca = mms.transform(X_test_pca)
+    
+    nn = Neural_Network(input_dim=X_train_pca.shape[1], hidden_layer=20, learning_rate=0.0001, batch_size=128)
     nn.build_model()
     nn.fit(X_train_pca, y_train, X_val_pca, y_val)
     

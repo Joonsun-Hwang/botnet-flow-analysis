@@ -270,7 +270,7 @@ class Botnet_Processor:
         mms = MinMaxScaler()
         
         X_train = mms.fit_transform(X_train)
-        X_test = mms.fit_transform(X_test)
+        X_test = mms.transform(X_test)
         
         duration = datetime.now() - now
         print('----- It took ' + str(duration.seconds) + '.' + str(duration.microseconds) + ' seconds to preprocess.-----')
@@ -471,14 +471,14 @@ if __name__ == "__main__":
             print("Data: ", idx)
             print("C: ", C)
     
-            lr, y_pred, accuracy = botnet_processor.logistic_regression(X_train, y_train, X_test, y_test, penalty, C)
+            lr, y_pred = botnet_processor.logistic_regression(X_train, y_train, X_test, y_test, penalty, C)
             
             pca = PCA(n_components=110)
             X_train_pca, X_val_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_val, X_test)
             lr, y_pred = botnet_processor.logistic_regression(X_train_pca, y_train, X_test_pca, y_test, penalty, C)
             
             print("*****************************")
-            
+    
     # Test SVM
     C_list = [1, 10, 100]
     gamma_list = [0.1, 1, 10]

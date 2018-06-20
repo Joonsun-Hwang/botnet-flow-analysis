@@ -17,6 +17,7 @@ from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
 from sklearn.metrics import confusion_matrix
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import MinMaxScaler
 
 import matplotlib.pyplot as plt
 
@@ -159,6 +160,12 @@ if __name__ == "__main__":
     pca = PCA(n_components=110)
     X_train_pca, X_val_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_val, X_test)
     
+    mms = MinMaxScaler()
+        
+    X_train_pca = mms.fit_transform(X_train_pca)
+    X_val_pca = mms.transform(X_val_pca)
+    X_test_pca = mms.transform(X_test_pca)
+    
     # 1
     # 98.54, Inf, 0
     # 98.54, Inf, 0
@@ -224,7 +231,15 @@ if __name__ == "__main__":
     pca = PCA(n_components=110)
     X_train_pca, X_val_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_val, X_test)
     
+    mms = MinMaxScaler()
+        
+    X_train_pca = mms.fit_transform(X_train_pca)
+    X_val_pca = mms.transform(X_val_pca)
+    X_test_pca = mms.transform(X_test_pca)
+    
     # 4
+    # 95.94, 99.57, 88.08
+    # 67.00, Inf, 0
     nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=25, learning_rate=0.0003)
     nn.build_model()
     nn.fit(X_train, y_train, X_val, y_val)
@@ -240,6 +255,8 @@ if __name__ == "__main__":
     y_pred = nn.predict(X_test_pca, y_test)
     
     # 5
+    # 94.59, 86.37, 99.27
+    # 67.00, Inf, 0
     nn = Neural_Network(input_dim=X_train.shape[1], hidden_layer=30, learning_rate=0.0003)
     nn.build_model()
     nn.fit(X_train, y_train, X_val, y_val)

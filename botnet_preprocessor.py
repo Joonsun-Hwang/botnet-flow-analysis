@@ -24,6 +24,9 @@ from sklearn.metrics import accuracy_score
 from sklearn.decomposition import PCA
 from itertools import combinations
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 # Set your working directory
 MY_WORKING_DIRECTORY = os.getcwd()
 
@@ -541,4 +544,31 @@ if __name__ == "__main__":
     
     arena_data = treated_data[treated_data['BinaryLabel']==1]
     arena_data.to_csv('/Users/junseon/Desktop/arena.csv')
+    
+    # Visualization in 3D with PCA
+    data = loader().botnet_data(sample_size=800000, class_rate=0.5)
+    
+    botnet_processor = Botnet_Processor(data=data)
+    
+    X_train, X_test, y_train, y_test = botnet_processor.preprocess()
+    
+    X_val = X_train[400000:, :]
+    X_train = X_train[:400000, :]
+    y_val = y_train[400000:]
+    y_train = y_train[:400000]
+    
+    pca = PCA(n_components=3)
+    X_train_pca, X_val_pca, X_test_pca = botnet_processor.feature_extract_pca(pca, X_train, X_val, X_test)
+    
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    
+    np.where(y_train == 0)
+    
+    ax.scatter(X_train_pca[np.where(y_train == 0), 0], X_train_pca[np.where(y_train == 0), 1], X_train_pca[np.where(y_train == 0), 2], c='r', marker='o', s=7)
+    ax.scatter(X_train_pca[np.where(y_train == 1), 0], X_train_pca[np.where(y_train == 1), 1], X_train_pca[np.where(y_train == 1), 2], c='b', marker='^', s=20)
+    ax.set_xlabel('X Label')
+    ax.set_ylabel('Y Label')
+    ax.set_zlabel('Z Label')
     
